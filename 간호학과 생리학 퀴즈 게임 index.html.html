@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>간호학과 생리학 스피드 퀴즈</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-light: #818cf8;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg-gradient: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 50%, #9333ea 100%);
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: var(--bg-gradient);
+      padding: 16px;
+      color: var(--text-main);
+    }
+
+    .quiz-card {
+      width: 100%;
+      max-width: 580px;
+      background: var(--card-bg);
+      border-radius: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* 상단 상태 바 */
+    .header-bar {
+      padding: 22px 24px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--primary);
+      background: #e0e7ff;
+      padding: 6px 14px;
+      border-radius: 999px;
+    }
+
+    .score-badge {
+      color: #b45309;
+      background: #fef3c7;
+    }
+
+    /* 타이머 영역 */
+    .timer-container {
+      padding: 0 24px 10px;
+    }
+
+    .timer-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .timer-num {
+      color: var(--danger);
+      font-size: 1.15rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timer-track {
+      width: 100%;
+      height: 10px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      border-radius: 999px;
+      transform-origin: left center;
+      transition: width 0.1s linear;
+    }
+
+    /* 본문 영역 */
+    .content-area {
+      padding: 16px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .question-title {
+      font-size: 1.28rem;
+      line-height: 1.5;
+      font-weight: 800;
+      color: #111827;
+      word-break: keep-all;
+    }
+
+    /* 선택지 목록 */
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 14px 18px;
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: #374151;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.18s ease;
+      word-break: keep-all;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: var(--primary-light);
+      background: #eef2ff;
+      transform: translateY(-2px);
+    }
+
+    .option-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: #ecfdf5 !important;
+      border-color: var(--success) !important;
+      color: #065f46 !important;
+      font-weight: 700;
+    }
+
+    .option-btn.wrong {
+      background: #fef2f2 !important;
+      border-color: var(--danger) !important;
+      color: #991b1b !important;
+    }
+
+    /* 해설 및 결과 카드 */
+    .feedback-box {
+      margin-top: 6px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .feedback-box.show {
+      display: block;
+    }
+
+    .feedback-box.correct-bg {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+    }
+
+    .feedback-box.wrong-bg {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .feedback-title {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    /* 하단 버튼 */
+    .action-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.08rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(79, 70, 229, 0.3);
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .action-btn:hover {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+    }
+
+    .action-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 오답 재도전 안내 화면 및 최종 결과 화면 */
+    .screen-view {
+      padding: 36px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .screen-icon {
+      font-size: 4rem;
+      animation: bounce 1s infinite alternate;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-8px); }
+    }
+
+    .screen-title {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .screen-desc {
+      font-size: 1.02rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+
+    .score-display {
+      margin: 12px 0 16px;
+      font-size: 3.2rem;
+      font-weight: 900;
+      background: linear-gradient(135deg, #4f46e5, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-pills {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pill {
+      background: #f3f4f6;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    /* 모바일 대응 미디어 쿼리 */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      .quiz-card {
+        border-radius: 22px;
+      }
+      .header-bar {
+        padding: 18px 18px 10px;
+      }
+      .timer-container {
+        padding: 0 18px 8px;
+      }
+      .content-area {
+        padding: 12px 18px 22px;
+      }
+      .question-title {
+        font-size: 1.15rem;
+      }
+      .option-btn {
+        padding: 12px 14px;
+        font-size: 0.95rem;
+      }
+      .score-display {
+        font-size: 2.7rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="quiz-card" id="quizCard">
+    <!-- 동적 렌더링 영역 -->
+  </main>
+
+  <script>
+    // 간호학 생리학 퀴즈 5문항 (공식 사실 기반)
+    const QUIZ_DATA = [
+      {
+        id: 1,
+        question: "정상 상태의 심장에서 자발적인 전기 신호를 가장 빠르게 생성하여 '심장 박동 조율기(Pacemaker)' 역할을 하는 부위는?",
+        options: [
+          "굴심방결절 (동방결절, SA node)",
+          "방실결절 (AV node)",
+          "히스번들 (His bundle)",
+          "푸르키니에 섬유 (Purkinje fibers)"
+        ],
+        answer: 0,
+        explanation: "굴심방결절(SA node)은 자발적인 탈분극 속도가 가장 빨라 정상 심장의 기준 리듬을 주도하는 심박조율기(Pacemaker)입니다."
+      },
+      {
+        id: 2,
+        question: "혈액 응고 반응의 최종 단계에서 수용성 피브리노겐(Fibrinogen)을 불용성 '피브린(Fibrin)' 그물망으로 전환시키는 핵심 효소는?",
+        options: [
+          "알부민 (Albumin)",
+          "헤파린 (Heparin)",
+          "트롬빈 (Thrombin)",
+          "프로트롬빈 (Prothrombin)"
+        ],
+        answer: 2,
+        explanation: "트롬빈(Thrombin)은 피브리노겐을 절단하여 불용성 피브린 중합체를 형성함으로써 안정적인 혈전을 만드는 핵심 효소입니다."
+      },
+      {
+        id: 3,
+        question: "신경세포의 '안정막전위(Resting membrane potential)'를 음(-)의 전하 상태로 유지하는 데 가장 결정적인 기전은?",
+        options: [
+          "전압개폐성 칼슘 통로의 개방",
+          "Na⁺-K⁺ 펌프 (3 Na⁺ 배출, 2 K⁺ 유입)",
+          "세포 외액으로의 염소 이온(Cl⁻) 능동수송",
+          "신경전달물질의 지속적인 세포내 유입"
+        ],
+        answer: 1,
+        explanation: "Na⁺-K⁺ ATP 가수분해효소 펌프는 3개의 Na⁺를 세포 밖으로 퍼내고 2개의 K⁺를 안으로 들여와 농도 경사와 음성 막전위를 유지합니다."
+      },
+      {
+        id: 4,
+        question: "신장의 네프론(Nephron)에서 사구체 여과액 속 포도당과 아미노산이 거의 100% 능동적으로 재흡수되는 주된 장소는?",
+        options: [
+          "근위세뇨관 (토리쪽세뇨관, Proximal tubule)",
+          "헨레고리 (Loop of Henle)",
+          "원위세뇨관 (먼쪽세뇨관, Distal tubule)",
+          "집합관 (Collecting duct)"
+        ],
+        answer: 0,
+        explanation: "사구체에서 여과된 포도당, 아미노산, 대부분의 수분 및 전해질은 근위세뇨관에서 거의 전량 재흡수됩니다."
+      },
+      {
+        id: 5,
+        question: "호흡 조절의 중추로서, 혈중 이산화탄소 분압(PCO₂) 및 수소이온(H⁺) 농도 변화를 감지해 환기량을 조절하는 뇌 부위는?",
+        options: [
+          "소뇌 (Cerebellum)",
+          "대뇌피질 (Cerebral cortex)",
+          "시상하부 (Hypothalamus)",
+          "연수 (숨뇌, Medulla oblongata)"
+        ],
+        answer: 3,
+        explanation: "연수(숨뇌)의 화학수용기와 호흡중추는 동맥혈 내 CO₂ 및 수소 이온 농도 변화에 가장 민감하게 반응하여 호흡 리듬을 조절합니다."
+      }
+    ];
+
+    const QUESTION_TIME = 5; // 한 문제당 5초
+    const POINTS_PER_QUESTION = 20; // 문제당 20점 (총 100점)
+
+    // 상태 관리
+    let currentPool = [];
+    let currentIndex = 0;
+    let score = 0;
+    let wrongQuestions = [];
+    let isReviewMode = false;
+    let timerInterval = null;
+    let timeLeft = QUESTION_TIME;
+    let hasAnswered = false;
+
+    const quizCard = document.getElementById("quizCard");
+
+    // 게임 시작 및 초기화
+    function initGame() {
+      currentPool = [...QUIZ_DATA];
+      currentIndex = 0;
+      score = 0;
+      wrongQuestions = [];
+      isReviewMode = false;
+      renderQuestionScreen();
+    }
+
+    // 문제 화면 렌더링
+    function renderQuestionScreen() {
+      clearInterval(timerInterval);
+      hasAnswered = false;
+      timeLeft = QUESTION_TIME;
+
+      const currentQ = currentPool[currentIndex];
+      const currentRoundLabel = isReviewMode 
+        ? `오답 복습 ${currentIndex + 1}/${currentPool.length}` 
+        : `문제 ${currentIndex + 1}/${currentPool.length}`;
+
+      quizCard.innerHTML = `
+        <div class="header-bar">
+          <span class="badge">🩺 ${currentRoundLabel}</span>
+          <span class="badge score-badge">🏆 점수: ${score}점</span>
+        </div>
+
+        <div class="timer-container">
+          <div class="timer-info">
+            <span>남은 시간</span>
+            <span class="timer-num" id="timerText">5.0초</span>
+          </div>
+          <div class="timer-track">
+            <div class="timer-bar" id="timerBar"></div>
+          </div>
+        </div>
+
+        <div class="content-area">
+          <h2 class="question-title">${currentQ.question}</h2>
+          <div class="options-list" id="optionsContainer">
+            ${currentQ.options.map((opt, i) => `
+              <button class="option-btn" data-index="${i}" onclick="selectAnswer(${i})">
+                <span>${i + 1}. ${opt}</span>
+              </button>
+            `).join('')}
+          </div>
+
+          <div class="feedback-box" id="feedbackBox">
+            <div class="feedback-title" id="feedbackTitle"></div>
+            <div id="feedbackText"></div>
+          </div>
+
+          <button class="action-btn" id="nextBtn" style="display: none;" onclick="goNext()">
+            다음 문제로 이동 ➔
+          </button>
+        </div>
+      `;
+
+      startTimer();
+    }
+
+    // 타이머 동작 (정밀 100ms 간격)
+    function startTimer() {
+      const timerBar = document.getElementById("timerBar");
+      const timerText = document.getElementById("timerText");
+      const startTime = Date.now();
+      const totalMs = QUESTION_TIME * 1000;
+
+      timerInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const remainingMs = Math.max(0, totalMs - elapsed);
+        const remainingSec = (remainingMs / 1000).toFixed(1);
+
+        timerText.textContent = `${remainingSec}초`;
+        const percentage = (remainingMs / totalMs) * 100;
+        timerBar.style.width = `${percentage}%`;
+
+        if (remainingMs <= 0) {
+          clearInterval(timerInterval);
+          handleTimeOut();
+        }
+      }, 50);
+    }
+
+    // 시간 초과 처리
+    function handleTimeOut() {
+      if (hasAnswered) return;
+      hasAnswered = true;
+      showAnswerResult(null, true);
+    }
+
+    // 답안 선택 처리
+    function selectAnswer(selectedIndex) {
+      if (hasAnswered) return;
+      hasAnswered = true;
+      clearInterval(timerInterval);
+      showAnswerResult(selectedIndex, false);
+    }
+
+    // 결과 표시 및 피드백 노출
+    // 결과 표시 및 피드백 노출
+    function showAnswerResult(selectedIndex, isTimeout) {
+      const currentQ = currentPool[currentIndex];
+      const isCorrect = !isTimeout && selectedIndex === currentQ.answer;
+
+      const buttons = document.querySelectorAll(".option-btn");
+      buttons.forEach(btn => btn.disabled = true);
+
+      // 첫 번째 도전에서 틀렸을 때는 정답을 미리 보여주지 않고, 맞히거나 오답 재도전일 때만 정답 강조
+      if (isCorrect || isReviewMode) {
+        buttons[currentQ.answer].classList.add("correct");
+      }
+
+      // 오답 선택 시 강조
+      if (!isCorrect && selectedIndex !== null) {
+        buttons[selectedIndex].classList.add("wrong");
+      }
+
+      // 점수 부여 및 오답 수집
+      if (isCorrect) {
+        if (!isReviewMode) {
+          score += POINTS_PER_QUESTION;
+        }
+      } else {
+        // 첫 라운드에서 틀린 문제 수집
+        if (!isReviewMode) {
+          wrongQuestions.push(currentQ);
+        }
+      }
+
+      // 헤더 점수 업데이트
+      const scoreBadge = document.querySelector(".score-badge");
+      if (scoreBadge) scoreBadge.textContent = `🏆 점수: ${score}점`;
+
+      // 피드백 박스 구성
+      const feedbackBox = document.getElementById("feedbackBox");
+      const feedbackTitle = document.getElementById("feedbackTitle");
+      const feedbackText = document.getElementById("feedbackText");
+
+      if (isCorrect) {
+        feedbackBox.className = "feedback-box show correct-bg";
+        feedbackTitle.textContent = isReviewMode ? "🎉 오답 극복 성공! 정답입니다!" : "🎉 정답입니다! (+20점)";
+        feedbackText.innerHTML = `<strong>정답: ${currentQ.answer + 1}번 (${currentQ.options[currentQ.answer]})</strong><br>${currentQ.explanation}`;
+      } else {
+        feedbackBox.className = "feedback-box show wrong-bg";
+        feedbackTitle.textContent = isTimeout ? "⏰ 시간 초과! (오답)" : "❌ 아쉽네요, 오답입니다!";
+
+        if (!isReviewMode) {
+          // [첫 번째 도전에서 틀렸을 때]: 정답 및 해설을 숨김
+          feedbackText.innerHTML = `💡 오답으로 체크되었습니다. 정답과 해설은 5문제를 모두 푼 뒤 <strong>오답 재도전</strong>에서 공개됩니다.`;
+        } else {
+          // [두 번째 다시 풀었을 때 틀리면]: 정답과 상세 해설 작성 및 노출
+          feedbackText.innerHTML = `<strong>정답: ${currentQ.answer + 1}번 (${currentQ.options[currentQ.answer]})</strong><br>${currentQ.explanation}`;
+        }
+      }
+
+      // 다음 버튼 노출
+      const nextBtn = document.getElementById("nextBtn");
+      nextBtn.style.display = "flex";
+      nextBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 다음 단계 진행
+    function goNext() {
+      currentIndex++;
+
+      if (currentIndex < currentPool.length) {
+        renderQuestionScreen();
+      } else {
+        // 현재 풀 완료 시
+        if (!isReviewMode && wrongQuestions.length > 0) {
+          renderWrongReviewIntro();
+        } else {
+          renderFinalResultScreen();
+        }
+      }
+    }
+
+    // 틀린 문제 재도전 안내 화면
+    function renderWrongReviewIntro() {
+      quizCard.innerHTML = `
+        <div class="screen-view">
+          <div class="screen-icon">🩺💡</div>
+          <h2 class="screen-title">오답 복습 타임!</h2>
+          <p class="screen-desc">
+            총 5문제 중 <strong>${wrongQuestions.length}문제</strong>를 틀렸습니다.<br>
+            틀린 문제만 다시 풀어서 생리학 개념을 완벽히 마스터해 볼까요?
+          </p>
+          <div class="stat-pills">
+            <span class="pill">현재 획득 점수: ${score}점</span>
+            <span class="pill">다시 풀 문제: ${wrongQuestions.length}개</span>
+          </div>
+          <button class="action-btn" onclick="startReviewMode()">
+            틀린 문제 다시 풀기 시작 ➔
+          </button>
+        </div>
+      `;
+    }
+
+    // 오답 재도전 모드 시작
+    function startReviewMode() {
+      isReviewMode = true;
+      currentPool = [...wrongQuestions];
+      currentIndex = 0;
+      renderQuestionScreen();
+    }
+
+    // 최종 결과 화면 (100점 만점 표시)
+    function renderFinalResultScreen() {
+      let message = "완벽합니다! 생리학 마스터 간호사 탄생! 🌟";
+      let icon = "🏆";
+      if (score < 60) {
+        message = "조금 더 복습하면 곧 완벽해질 거예요! 화이팅! 💪";
+        icon = "📚";
+      } else if (score < 100) {
+        message = "훌륭한 성적입니다! 임상 생리학 실력자시군요! 👏";
+        icon = "✨";
+      }
+
+      quizCard.innerHTML = `
+        <div class="screen-view">
+          <div class="screen-icon">${icon}</div>
+          <h2 class="screen-title">퀴즈 완료!</h2>
+          <p class="screen-desc">${message}</p>
+          
+          <div class="score-display">${score} <span style="font-size: 1.6rem; color: #6b7280;">/ 100점</span></div>
+          
+          <div class="stat-pills">
+            <span class="pill">정답: ${score / POINTS_PER_QUESTION} / 5</span>
+            <span class="pill">오답 복습: ${wrongQuestions.length > 0 ? '완료' : '오답 없음(만점)'}</span>
+          </div>
+
+          <button class="action-btn" onclick="initGame()">
+            🔄 다시 시작하기
+          </button>
+        </div>
+      `;
+    }
+
+    // 최초 실행
+    initGame();
+  </script>
+</body>
+</html>
